@@ -94,16 +94,39 @@ func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64)
 			return nil, err
 		}
 	}
-	u := &url.URL{
-		Scheme: "https",
-		Host:   "storage.googleapis.com",
-		Path:   fmt.Sprintf("/%s/%s", o.bucket, o.object),
+	
+	var u *url.URL
+
+	ep:= o.c.raw.BasePath
+
+	if ep != ""{
+		ur, err := url.ParseRequestURI(ep)
+		if err != nil {
+			return nil, err
+		}
+		u = &url.URL{
+			Scheme: ur.Scheme,
+			Host:   ur.Hostname(),
+			Path:   fmt.Sprintf("/%s/%s", o.bucket, o.object),
+		}
+		if ur.Port()!=""{
+			u.Host = u.Host+":"+ur.Port()
+		}
+	}else{
+		u = &url.URL{
+			Scheme: "https",
+			Host:   "storage.googleapis.com",
+			Path:   fmt.Sprintf("/%s/%s", o.bucket, o.object),
+		}
 	}
+
 	verb := "GET"
 	if length == 0 {
 		verb = "HEAD"
 	}
+
 	req, err := http.NewRequest(verb, u.String(), nil)
+
 	if err != nil {
 		return nil, err
 	}
