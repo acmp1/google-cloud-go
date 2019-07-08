@@ -34,6 +34,8 @@ import (
 
 var crc32cTable = crc32.MakeTable(crc32.Castagnoli)
 
+const defaultBasePath = "https://www.googleapis.com/storage/v1/"
+
 // ReaderObjectAttrs are attributes about the object being read. These are populated
 // during the New call. This struct only holds a subset of object attributes: to
 // get the full set of attributes, use ObjectHandle.Attrs.
@@ -94,10 +96,20 @@ func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64)
 			return nil, err
 		}
 	}
-	u := &url.URL{
-		Scheme: "https",
-		Host:   "storage.googleapis.com",
-		Path:   fmt.Sprintf("/%s/%s", o.bucket, o.object),
+	var u *url.URL
+	ep := o.c.raw.BasePath
+	if ep != defaultBasePath {
+		u = &url.URL{
+			Scheme: "http",
+			Host:   ep,
+			Path:   fmt.Sprintf("/%s/%s", o.bucket, o.object),
+		}
+	} else {
+		u = &url.URL{
+			Scheme: "https",
+			Host:   "storage.googleapis.com",
+			Path:   fmt.Sprintf("/%s/%s", o.bucket, o.object),
+		}
 	}
 	verb := "GET"
 	if length == 0 {

@@ -27,8 +27,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -90,6 +92,13 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error
 	o := []option.ClientOption{
 		option.WithScopes(ScopeFullControl),
 		option.WithUserAgent(userAgent),
+	}
+	if addr := os.Getenv("STORAGE_ENV"); addr != "" {
+		_, err := net.Dial("tcp", addr)
+		if err != nil {
+			return nil, fmt.Errorf("dialing: %v", err)
+		}
+		o = append(o, option.WithEndpoint(addr))
 	}
 	opts = append(o, opts...)
 	hc, ep, err := htransport.NewClient(ctx, opts...)
